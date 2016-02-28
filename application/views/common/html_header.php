@@ -10,3 +10,22 @@
 	<link href="/static_contents/css/jumbotron.css" rel="stylesheet">
 </head>
 <body>
+<div class="container">
+
+<?php if ($this->session->userdata("name")) { ?>
+	ようこそ <?php echo $this->session->userdata("name"); ?> さん <a href="/top/logout">[logout]</a>
+<?php } ?>
+
+  <div class="header clearfix">
+    <nav>
+      <ul class="nav nav-pills pull-right">
+        <li role="presentation" class="active"><a href="#">Home</a></li>
+        <li role="presentation"><a href="#">About</a></li>
+        <li role="presentation"><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+    <h3 class="text-muted">my portal</h3>
+  </div>
+  <?php
+    echo $this->session->flashdata('error');
+  ?>

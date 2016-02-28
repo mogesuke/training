@@ -1,121 +1,85 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Top extends CI_Controller {
+class Top extends MY_Controller {
 
 	/**
-	 * Index Page for this controller.
-	 *
-	 * Maps to the following URL
-	 * 		http://example.com/index.php/welcome
-	 *	- or -
-	 * 		http://example.com/index.php/welcome/index
-	 *	- or -
-	 * Since this controller is set as the default controller in
-	 * config/routes.php, it's displayed at http://example.com/
-	 *
-	 * So any other public methods not prefixed with an underscore will
-	 * map to /index.php/welcome/<method_name>
-	 * @see https://codeigniter.com/user_guide/general/urls.html
+	 * Top画面を表示する
 	 */
 	public function index()
 	{
-		$oauth_url = $this->createOauthUrlGetCode();
-		$data = array(
-               'oauth_url' => $oauth_url
-        );
+		// googleoauth関連クラスの読み込み
+		$this->load->library('google_oauthclass');
+		$oauth_url = $this->google_oauthclass->create_oauth_url();
 
+		// 未ログインのときのみ実行
+		if (!$this->isLogin()) {
+			$data = array(
+	               'oauth_url' => $oauth_url
+	        );
+	    } else {
+	    	$id = $this->session->userdata('id');
+
+	    	$this->load->model('user/Contents_auth_model', 'contents_auth');
+			$contents = $this->contents_auth->find_auth_contents($id);
+			$data = array(
+					'contents' => $contents
+			);
+	    }
+
+		// 画面表示
 		$this->load->view('common/html_header');
 		$this->load->view('top/index', $data);
 		$this->load->view('common/html_footer');
 	}
 
+	/**
+	 * ログアウトする
+	 */
+	public function logout()
+	{
+		$this->session->sess_destroy();
+		redirect(base_url());
+	}
+
+	/**
+	 * GoogleOauthからのコールバック用
+	 */
 	public function callback()
 	{
-		// codeを取得
-		$code = $this->input->get('code');
-		// codeを使ってtoken取得
-		$token = $this->oauthGetToken($code);
-		// 戻り値をjsonエンコード
-		$token_json = json_decode($token);
-		// id_tokenから一部情報を取得
-		// $id_token = explode(".", $token_json->id_token);
+		// 未ログインのときのみ実行
+		if (!$this->isLogin()) {
+			// codeを取得
+			$code = $this->input->get('code');
+			// codeを使ってtoken取得
+			$this->load->library('google_oauthclass');
+			$token = $this->google_oauthclass->get_token($code);
+			// 戻り値をjsonDecode
+			$token_json = json_decode($token);
 
-		// profile取得
-		$profile = $this->getProfile($token_json->access_token);
-		$profile_json = json_decode($profile);
+			// 成功したら
+			if (!array_key_exists("error", $token_json)) {
+				// profile取得
+				$profile = $this->google_oauthclass->get_profile($token_json->access_token);
+				$profile_json = json_decode($profile);
 
-		$this->session->set_userdata('name', $profile_json->name);
+				// ユーザーテーブル登録
+				$this->load->model('user/User_model', 'user');
+				$row = $this->user->find_row(array('sub' => $profile_json->sub));
+				if (is_null($row)) {
+					$this->user->sub = $profile_json->sub;
+					$id = $this->user->insert();
+				} else {
+					$id = $row->id;
+				}
 
-		$this->load->view('common/html_header');
-		$this->load->view('top/sessiontest');
-		$this->load->view('common/html_footer');
-	}
-
-	private function createOauthUrlGetCode() {
-		return OAUTH_URL_BASE ."auth"
-						."?client_id=" .OAUTH_CLIENT_ID
-						."&scope=openid email profile"
-						."&response_type=code"
-						."&redirect_uri=http://" .$_SERVER["HTTP_HOST"] ."/top/callback"
-						."&approval_prompt=force"
-						."&access_type=offline";
-	}
-
-	private function oauthGetToken($code) {
-		$url = OAUTH_URL_BASE ."token";
-
-		$data = array(
-            "client_id" => OAUTH_CLIENT_ID,
-            "client_secret" => OAUTH_CLIENT_SECRET,
-            "grant_type" => "authorization_code",
-            "redirect_uri" => "http://" .$_SERVER["HTTP_HOST"] ."/top/callback",
-            "code" => $code
-        );
-        return $this->executePost($url, $data);
-	}
-
-	private function executePost($url, $data)
-	{
-		$data = http_build_query($data, "", "&");
-        // header
-        $header = array(
-            "Content-Type: application/x-www-form-urlencoded",
-            "Content-Length: ".strlen($data)
-        );
-        // request setting
-        $context = array(
-            "http" => array(
-                "method"  => "POST",
-                "header"  => implode("\r\n", $header),
-                "content" => $data
-            ),
-            "ssl"=>array(
-		        "verify_peer"=>false,
-		        "verify_peer_name"=>false,
-		    ),
-        );
-        return file_get_contents($url, false, stream_context_create($context));
-	}
-
-	private function getProfile($access_token)
-	{
-		$url = "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
-        // header
-        $header = array(
-            "Authorization: OAuth " .$access_token
-        );
-        // request setting
-        $context = array(
-            "http" => array(
-                "method"  => "GET",
-                "header"  => implode("\r\n", $header),
-            ),
-            "ssl"=>array(
-		        "verify_peer"=>false,
-		        "verify_peer_name"=>false,
-		    ),
-        );
-        return file_get_contents($url, false, stream_context_create($context));
+				// session設定
+				$this->session->set_userdata('name', $profile_json->name);
+				$this->session->set_userdata('id', $id);
+			} else {
+				$this->session->set_flashdata('error', 'ログインに失敗しました。再度試してください。');
+			}
+		}
+		redirect(base_url());
 	}
 }
