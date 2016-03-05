@@ -1,0 +1,36 @@
+ul {
+	list-style-type: none;
+}
+
+.top {
+	vertical-align: top;
+}
+
+.left {
+	text-align: left;
+}
+
+.center {
+	text-align: center;
+}
+
+.right {
+	text-align: right;
+}
+
+.underMargin {
+	margin-bottom: 15px;
+}
+
+.hiden {
+	display:none;
+}
+
+table {
+	width: 100%;
+	table-layout: fixed;
+}
+
+a:hover {
+	text-decoration: none;
+}

@@ -16,7 +16,7 @@ class English extends MY_Controller {
 
 		// 画面表示
 		$this->load->view('common/html_header');
-		$this->load->view('English/index', $data);
+		$this->load->view('english/index', $data);
 		$this->load->view('common/html_footer');
 	}
 
@@ -32,12 +32,12 @@ class English extends MY_Controller {
 
 		$data = array(
 			'english_category' => $english_category,
-			'english' => $english
+			'questions' => $english
 		);
 
 		// 画面表示
 		$this->load->view('common/html_header');
-		$this->load->view('English/question', $data);
+		$this->load->view('english/question', $data);
 		$this->load->view('common/html_footer');
 	}
 }

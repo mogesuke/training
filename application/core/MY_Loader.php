@@ -12,6 +12,6 @@ class MY_Loader extends CI_Loader {
 
     public function isLogin() 
     {
-        return $this->session->userdata("name");
+        return $this->session->userdata(SESSION_NAME);
     }
 }

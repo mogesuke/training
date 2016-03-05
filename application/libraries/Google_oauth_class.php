@@ -1,6 +1,6 @@
 <?php if ( ! defined('BASEPATH')) exit('No direct script access allowed'); 
 
-class Google_oauthclass {
+class Google_oauth_class {
 
     /**
      * Oauthへアクセス用(codeを取得するページ)のURL
@@ -32,8 +32,8 @@ class Google_oauthclass {
             "code" => $code
         );
         $CI =& get_instance();
-        $CI->load->library('httpclass');
-        return $CI->httpclass->execute_post($url, $param, NULL);
+        $CI->load->library('http_class');
+        return $CI->http_class->execute_post($url, $param, NULL);
     }
 
     /**
@@ -49,7 +49,7 @@ class Google_oauthclass {
             "Authorization: OAuth " .$access_token
         );
         $CI =& get_instance();
-        $CI->load->library('httpclass');
-        return $CI->httpclass->execute_get($url, NULL, $header);
+        $CI->load->library('http_class');
+        return $CI->http_class->execute_get($url, NULL, $header);
     }
 }

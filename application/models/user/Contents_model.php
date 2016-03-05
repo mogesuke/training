@@ -7,6 +7,7 @@ class Contents_model extends MY_Model {
 	public $name;
 	public $path;
 	public $class;
+	public $auth_type;
 
 	/**
 	 * constructor

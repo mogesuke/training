@@ -9,8 +9,8 @@ class Top extends MY_Controller {
 	public function index()
 	{
 		// googleoauth関連クラスの読み込み
-		$this->load->library('google_oauthclass');
-		$oauth_url = $this->google_oauthclass->create_oauth_url();
+		$this->load->library('google_oauth_class');
+		$oauth_url = $this->google_oauth_class->create_oauth_url();
 
 		// 未ログインのときのみ実行
 		if (!$this->isLogin()) {
@@ -18,10 +18,10 @@ class Top extends MY_Controller {
 	               'oauth_url' => $oauth_url
 	        );
 	    } else {
-	    	$id = $this->session->userdata('id');
+	    	$user_id = $this->session->userdata(SESSION_USER_ID);
 
 	    	$this->load->model('user/Contents_auth_model', 'contents_auth');
-			$contents = $this->contents_auth->find_auth_contents($id);
+			$contents = $this->contents_auth->find_auth_contents($user_id);
 			$data = array(
 					'contents' => $contents
 			);
@@ -52,30 +52,24 @@ class Top extends MY_Controller {
 			// codeを取得
 			$code = $this->input->get('code');
 			// codeを使ってtoken取得
-			$this->load->library('google_oauthclass');
-			$token = $this->google_oauthclass->get_token($code);
+			$this->load->library('google_oauth_class');
+			$token = $this->google_oauth_class->get_token($code);
 			// 戻り値をjsonDecode
 			$token_json = json_decode($token);
 
 			// 成功したら
 			if (!array_key_exists("error", $token_json)) {
 				// profile取得
-				$profile = $this->google_oauthclass->get_profile($token_json->access_token);
+				$profile = $this->google_oauth_class->get_profile($token_json->access_token);
 				$profile_json = json_decode($profile);
 
 				// ユーザーテーブル登録
-				$this->load->model('user/User_model', 'user');
-				$row = $this->user->find_row(array('sub' => $profile_json->sub));
-				if (is_null($row)) {
-					$this->user->sub = $profile_json->sub;
-					$id = $this->user->insert();
-				} else {
-					$id = $row->id;
-				}
+				$this->load->library('user_manage_class');
+				$user_id = $this->user_manage_class->confirm_and_regist_user($profile_json);
 
 				// session設定
-				$this->session->set_userdata('name', $profile_json->name);
-				$this->session->set_userdata('id', $id);
+				$this->session->set_userdata(SESSION_NAME, $profile_json->name);
+				$this->session->set_userdata(SESSION_USER_ID, $user_id);
 			} else {
 				$this->session->set_flashdata('error', 'ログインに失敗しました。再度試してください。');
 			}

@@ -5,6 +5,8 @@ class User_model extends MY_Model {
 	// テーブルカラムを public フィールドとして定義
 	public $id;
 	public $sub;
+	public $mail;
+	public $user_type;
 
 	/**
 	 * constructor
